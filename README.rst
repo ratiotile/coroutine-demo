@@ -7,10 +7,11 @@ It appears that Visual Studio 2015 Update 3 actually implements http://open-std.
 
 an awaitable type needs to define 3 member functions:
 
-code::
-  bool await_ready() const;
-  void await_suspend(std::coroutine_handle<>);
-  T await_resume();
+::
+
+    bool await_ready() const;
+    void await_suspend(std::coroutine_handle<>);
+    T await_resume();
 
 await_ready() is called when co_await is used on an awaitable. It returns false to suspend, otherwise it needs to have a value ready.
 
@@ -22,6 +23,7 @@ The coroutine promise is looked up under the resumable function type R::promise_
 A resumable function must specify coroutine promise, which has:
 
 code::
+
   get_return_object()
   initial_suspend()
   final_suspend()
@@ -29,6 +31,7 @@ code::
 Coroutines must be of type resumable function.
 
 code::
+
   struct promise_type;
   constructor(coroutine_handle<promise_type> c);
   destructor(); // call c.destroy()
