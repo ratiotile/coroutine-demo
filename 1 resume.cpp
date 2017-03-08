@@ -8,7 +8,7 @@ using std::cout;
 
 
 struct ResumableThing {
-	struct promise_type {
+  struct promise_type {
     // factory function
     ResumableThing get_return_object() {
       return ResumableThing(coroutine_handle<promise_type>::from_promise(*this));
@@ -16,27 +16,27 @@ struct ResumableThing {
     auto initial_suspend() { return stdx::suspend_never(); }
     auto final_suspend() { return stdx::suspend_never(); }
     void return_void() {}
-	};
-	coroutine_handle<promise_type> _coroutine = nullptr;
-	explicit ResumableThing(coroutine_handle<promise_type> coroutine)
-		: _coroutine(coroutine) {
-	}
-	~ResumableThing() {
-		if (_coroutine) _coroutine.destroy();
-	}
-	ResumableThing() = default;
-	ResumableThing(ResumableThing const&) = delete; // no copy
-	ResumableThing& operator=(ResumableThing const&) = delete; // no copy assign
-	ResumableThing(ResumableThing&& other) // move constructor
-		: _coroutine(other._coroutine) {
-		other._coroutine = nullptr;
-	}
-	ResumableThing& operator=(ResumableThing&& other) { // move assign
-		if (&other != this) {
-			_coroutine = other._coroutine;
-			other._coroutine = nullptr;
-		}
-	}
+  };
+  coroutine_handle<promise_type> _coroutine = nullptr;
+  explicit ResumableThing(coroutine_handle<promise_type> coroutine)
+    : _coroutine(coroutine) {
+  }
+  ~ResumableThing() {
+    if (_coroutine) _coroutine.destroy();
+  }
+  ResumableThing() = default;
+  ResumableThing(ResumableThing const&) = delete; // no copy
+  ResumableThing& operator=(ResumableThing const&) = delete; // no copy assign
+  ResumableThing(ResumableThing&& other) // move constructor
+    : _coroutine(other._coroutine) {
+    other._coroutine = nullptr;
+  }
+  ResumableThing& operator=(ResumableThing&& other) { // move assign
+    if (&other != this) {
+      _coroutine = other._coroutine;
+      other._coroutine = nullptr;
+    }
+  }
   auto resume() { _coroutine.resume(); }
 };
 
