@@ -27,3 +27,11 @@
 *.exe
 *.out
 *.app
+
+*.suo
+*.vcxproj.user
+Debug
+Release
+*.db
+*.opendb
+/packages
