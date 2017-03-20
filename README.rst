@@ -5,12 +5,13 @@ C++ Coroutines in MSVC 2015
 
 It appears that Visual Studio 2015 Update 3 actually implements http://open-std.org/JTC1/SC22/WG21/docs/papers/2015/p0057r0.pdf
 
-an awaitable type needs to define 3 member functions:
+an awaitable type needs to define 3 member functions.
 
 .. code:: c++
-  bool await_ready() const;
-  void await_suspend(std::coroutine_handle<>);
-  T await_resume();
+
+    bool await_ready() const;
+    void await_suspend(std::coroutine_handle<>);
+    T await_resume();
 
 await_ready() is called when co_await is used on an awaitable. It returns false to suspend, otherwise it needs to have a value ready.
 
@@ -22,16 +23,18 @@ The coroutine promise is looked up under the resumable function type R::promise_
 A resumable function must specify coroutine promise, which has:
 
 .. code:: c++
-  get_return_object()
-  initial_suspend()
-  final_suspend()
 
-Coroutines must be of type resumable function.
+    get_return_object()
+    initial_suspend()
+    final_suspend()
+
+Coroutines must be of type resumable function:
 
 .. code:: c++
-  struct promise_type;
-  constructor(coroutine_handle<promise_type> c);
-  destructor(); // call c.destroy()
+
+    struct promise_type;
+    constructor(coroutine_handle<promise_type> c);
+    destructor(); // call c.destroy()
 
 
 .. [n4134] http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2014/n4134.pdf
