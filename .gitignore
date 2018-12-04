@@ -7,6 +7,7 @@
 # Precompiled Headers
 *.gch
 *.pch
+*.ipch
 
 # Compiled Dynamic libraries
 *.so
@@ -35,3 +36,4 @@ Release
 *.db
 *.opendb
 /packages
+/CoroutineTest/.vs/CoroutineTest/v15/ipch/AutoPCH/30675c8c60b118ca/*.ipch

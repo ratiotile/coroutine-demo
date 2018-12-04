@@ -1,8 +1,9 @@
 #pragma once
-#include "test_scenario.h"
+#include "scenario.h"
 #include "MiLi\mili.h"
 #include <iostream>
 #include <queue>
+#include <vector>
 
 using namespace mili;
 using namespace std;
@@ -17,6 +18,7 @@ struct MiliTask3 : mili::Coroutine {
   virtual MiliTask3* run() {
     return end_coro3;
   }
+  virtual ~MiliTask3() = default;
 };
 
 struct MiliTask3_Worker : MiliTask3 {
@@ -74,7 +76,10 @@ struct MiliTask3_Dropoff : MiliTask3_Worker {
 };
 
 struct MiliTask3Main : MiliTask3_Worker {
-  virtual MiliTask3* run() {
+  Worker m_worker;
+  MiliTask3Main(): MiliTask3_Worker(m_worker) {}
+
+  MiliTask3* run() override {
     BEGIN_COROUTINE
       while (true) {
         mili_yield(new MiliTask3_GotoMine(worker, this));
@@ -83,12 +88,12 @@ struct MiliTask3Main : MiliTask3_Worker {
       }
     END_COROUTINE(end_coro3);
   }
-  MiliTask3Main(Worker& p_worker) :MiliTask3_Worker(p_worker) {}
 };
 
-struct MiliTask3Mgr : Task {
+struct MiliTask3Mgr : Task{
   queue<MiliTask3*> q;
-  int run() {
+  std::vector<MiliTask3Main*> tasks;
+  int run() override {
     do {
       auto curr = q.front();
       q.pop();
@@ -105,18 +110,32 @@ struct MiliTask3Mgr : Task {
         q.push(awt);
         continue;
       }
-    } while (q.size() > 0);
+    } while (!q.empty());
     return 0;
   }
-  MiliTask3Mgr()
-    : Task()
+
+  void addTask()
   {
-    auto t = new MiliTask3Main(worker);
+    auto const t = new MiliTask3Main();
+    tasks.push_back(t);
     q.push(t);
   }
 
-  void print(ostream& stream) const {
-    stream << "Mili Coroutine3: " << worker.total << endl;
+  void print(ostream& stream) const override {
+    auto count = 0;
+    for(auto t : tasks) {
+      count += t->m_worker.total;
+    }
+    stream << " Mili Coroutine3: " << count << endl;
+  }
+
+  ~MiliTask3Mgr() override {
+    while(!q.empty()) {
+      auto const t = q.front();
+      delete t;
+      q.pop();
+    }
+    tasks.clear();
   }
 };
 
@@ -126,6 +145,12 @@ inline int runMili3() {
   next_frame3 = new MiliTask3();
   end_coro3 = new MiliTask3();
   auto *task = new MiliTask3Mgr();
+  for(int i=0; i < num_tasks; ++i) {
+    task->addTask();
+  }
   World world(task);
-  return world.run();
+  auto result = world.run();
+  delete next_frame3;
+  delete end_coro3;
+  return result;
 }

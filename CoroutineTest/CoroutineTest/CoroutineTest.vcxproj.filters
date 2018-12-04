@@ -18,9 +18,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="test_scenario.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="MiLi\mili\coroutines.h">
       <Filter>Header Files\MiLi</Filter>
     </ClInclude>
@@ -33,6 +30,9 @@
     <ClInclude Include="2 MiLi queue.hpp">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="scenario.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -42,6 +42,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="example resume.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="scenario.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
