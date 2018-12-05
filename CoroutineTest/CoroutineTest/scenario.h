@@ -10,7 +10,7 @@ const int worker_speed = 1;
 const int worker_capacity = 1;
 const int mining_frames = 10;
 const int num_tasks = 1000;
-const int frames_to_run = 10000000;
+const int frames_to_run = 1000000;
 
 
 struct Worker {

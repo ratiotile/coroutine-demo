@@ -5,7 +5,7 @@
 
 
 
-int main() {
+int __cdecl main() {
   //int score = 0;
   cout << "__Coroutine Comparison__\n" << endl;
   //runMili();
