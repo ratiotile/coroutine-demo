@@ -19,7 +19,7 @@ coroutines: A minimal library that implements coroutines.
 #ifndef COROUTINES_H
 #define COROUTINES_H
 
-NAMESPACE_BEGIN
+namespace mili {
 
 class Coroutine
 {
@@ -58,7 +58,7 @@ public:
     }                       \
     exit_coroutine(ret)
 
-NAMESPACE_END
+}
 
 #endif
 

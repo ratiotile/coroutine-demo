@@ -1,6 +1,7 @@
 #pragma once
 #include "scenario.h"
 #include "MiLi\mili.h"
+#include "mili_helpers.h"
 #include <iostream>
 #include <queue>
 

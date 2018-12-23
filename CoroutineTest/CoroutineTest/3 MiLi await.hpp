@@ -1,6 +1,8 @@
 #pragma once
+
 #include "scenario.h"
-#include "MiLi\mili.h"
+#include "MiLi\mili\coroutines.h"
+#include "mili_helpers.h"
 #include <iostream>
 #include <queue>
 #include <vector>

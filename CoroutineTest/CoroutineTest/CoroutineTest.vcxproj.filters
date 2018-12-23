@@ -27,18 +27,21 @@
     <ClInclude Include="3 MiLi await.hpp">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="2 MiLi queue.hpp">
+    <ClInclude Include="scenario.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="scenario.h">
+    <ClInclude Include="coroutines_ts.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="mili_helpers.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="2 MiLi queue.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="1 MiLi coroutine.hpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="example resume.cpp">
@@ -47,5 +50,14 @@
     <ClCompile Include="scenario.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="coroutines_ts.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="1 MiLi coroutine.h">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
 </Project>

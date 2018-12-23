@@ -1,5 +1,7 @@
 # Coroutine Testing
-- MiLi: good old macro-based switch hack
+measuring time to yield and switch to another task
+- MiLi: (15ns) good old macro-based switch hack
+- [Boost Asio Coroutine](https://www.boost.org/doc/libs/1_55_0/doc/html/boost_asio/reference/coroutine.html): another Duff's Device, looks more robust than MiLi. Seems that for loops optimize away better than whiles, and the if statements are probably to allow switch statements inside the coroutine body.
 - [nim asyncio]() 
 - [libcopp](https://github.com/owt5008137/libcopp) Claims high perf, uses boost.context...
 - [cppcoro](https://github.com/lewissbaker/cppcoro) Appears to have a nice api

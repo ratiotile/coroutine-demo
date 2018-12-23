@@ -76,6 +76,8 @@
       <SDLCheck>true</SDLCheck>
       <AdditionalOptions>/await %(AdditionalOptions)</AdditionalOptions>
       <DisableSpecificWarnings>4290</DisableSpecificWarnings>
+      <PreprocessorDefinitions>;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <UndefinePreprocessorDefinitions>_HAS_STD_BYTE</UndefinePreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -104,6 +106,10 @@
       <CallingConvention>FastCall</CallingConvention>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <OmitFramePointers>true</OmitFramePointers>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <PreprocessorDefinitions>_HAS_STD_BYTE=0</PreprocessorDefinitions>
+      <UndefinePreprocessorDefinitions>
+      </UndefinePreprocessorDefinitions>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -125,19 +131,32 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="1 MiLi coroutine.hpp" />
+    <ClCompile Include="1 MiLi coroutine.h" />
+    <ClCompile Include="coroutines_ts.cpp" />
     <ClCompile Include="example resume.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="scenario.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="2 MiLi queue.hpp" />
+    <ClInclude Include="2 MiLi queue.h" />
     <ClInclude Include="3 MiLi await.hpp" />
+    <ClInclude Include="coroutines_ts.h" />
     <ClInclude Include="MiLi\mili\coroutines.h" />
     <ClInclude Include="MiLi\mili\mili.h" />
+    <ClInclude Include="mili_helpers.h" />
     <ClInclude Include="scenario.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
+    <Import Project="..\packages\Microsoft.Gsl.0.1.2.1\build\native\Microsoft.Gsl.targets" Condition="Exists('..\packages\Microsoft.Gsl.0.1.2.1\build\native\Microsoft.Gsl.targets')" />
   </ImportGroup>
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\packages\Microsoft.Gsl.0.1.2.1\build\native\Microsoft.Gsl.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Gsl.0.1.2.1\build\native\Microsoft.Gsl.targets'))" />
+  </Target>
 </Project>
