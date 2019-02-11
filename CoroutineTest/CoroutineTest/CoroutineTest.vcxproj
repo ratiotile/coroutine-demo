@@ -99,7 +99,7 @@
       <SDLCheck>false</SDLCheck>
       <AdditionalOptions>/await %(AdditionalOptions)</AdditionalOptions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <DisableSpecificWarnings>4290</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4290; 5040</DisableSpecificWarnings>
       <WholeProgramOptimization>true</WholeProgramOptimization>
       <BufferSecurityCheck />
       <EnforceTypeConversionRules>true</EnforceTypeConversionRules>
@@ -107,7 +107,7 @@
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <OmitFramePointers>true</OmitFramePointers>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <PreprocessorDefinitions>_HAS_STD_BYTE=0</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_HAS_STD_BYTE=0;_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING=1</PreprocessorDefinitions>
       <UndefinePreprocessorDefinitions>
       </UndefinePreprocessorDefinitions>
     </ClCompile>

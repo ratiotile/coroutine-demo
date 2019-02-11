@@ -6,7 +6,7 @@
 int __cdecl main() {
   //int score = 0;
   cout << "__Coroutine Comparison__\n" << endl;
-  runMili3();
+  //runMili3();
 
   //runMili();
   //runMili2();

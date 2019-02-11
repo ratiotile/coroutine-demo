@@ -39,3 +39,4 @@ Release
 /CoroutineTest/.vs/CoroutineTest/v15/ipch/AutoPCH/30675c8c60b118ca/*.ipch
 *.ilk
 *.pdb
+build

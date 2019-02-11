@@ -146,7 +146,6 @@ struct TaskManager {
     auto & frame = gsl::at(m_frames, i);//m_frames[i];
     return frame;
   }
-
 };
 
 void benchmark_cts_tasks();
