@@ -75,9 +75,13 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <AdditionalOptions>/await %(AdditionalOptions)</AdditionalOptions>
-      <DisableSpecificWarnings>4290</DisableSpecificWarnings>
-      <PreprocessorDefinitions>;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <UndefinePreprocessorDefinitions>_HAS_STD_BYTE</UndefinePreprocessorDefinitions>
+      <DisableSpecificWarnings>4290; 5040</DisableSpecificWarnings>
+      <PreprocessorDefinitions>_HAS_STD_BYTE=0;_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <UndefinePreprocessorDefinitions>
+      </UndefinePreprocessorDefinitions>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <EnforceTypeConversionRules>true</EnforceTypeConversionRules>
+      <CallingConvention>FastCall</CallingConvention>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -136,6 +140,7 @@
     <ClCompile Include="example resume.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="scenario.cpp" />
+    <ClCompile Include="using_future.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="2 MiLi queue.h" />
