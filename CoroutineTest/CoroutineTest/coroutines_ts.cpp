@@ -1,70 +1,49 @@
 #include "coroutines_ts.h"
-#include <assert.h>
-#include <future>
-#include<experimental/coroutine>
-
 
 namespace cts {
-TaskManager* Task::tm = nullptr;
-
-
-Task doWork(Worker & worker) {
-  assert(worker.atMine());
-  do {
-    worker.gather();
-    co_await Task::tm->sleepFrames();
-  } while (worker.isMining());
-  co_return;
-}
-
-Task goToMine(Worker & worker) {
-  assert(!worker.atMine());
-  std::cout << "go to mine";
-  while(!worker.atMine()) {
-    worker.moveMine();
-    co_await doWork(worker);
-  }
-  co_return;
-}
-
-Task onFrame() {
-  while(true) {
-    std::cout << "onframe\n";
-    co_await Task::tm->sleepFrames();
-  }
-}
-
-
-/*****************************************************************************/
 MyCoro test_fun(MyFuture& fut) {
   cout << "t waiting on future " << &fut << "\n";
+  /* c1 = coroutine_handle
+   * f_a = MyFuture::awaiter(fut) 
+   * f_a.await_suspend(c1)
+   *   f_a.m_awaiter = c1
+   *   fut.m_list_head = f_a
+   */
   co_await fut;
   cout << "t done\n";
+  /* c_p.return_void()
+   * c_h.resume()
+   */
 }
 
-void benchmark_cts_tasks() {
+void run_cts_example() {
   cout << "creating fut\n";
   MyFuture fut;
+  cout << "run first coroutine\n";
   auto t = test_fun(fut);
   cout << "t created\n";
   auto const t2 = [](MyCoro& t) -> MyCoro {
     cout << "t2 awaiting on t " << &t << "\n";
+    /* c_p = MyCoro::promise_type(t)
+     * c_a = MyCoro::awaiter(t)
+     * c_h = coroutine_handle(t2)
+     * c1.await_suspend(c_h)
+     *   c_p.m_continuation = c_h
+     */
     co_await t;
+    /* c_a.await_resume()
+     */
     cout << "t2 done!\n";
   };
-  cout << "t2 paused\n";
+  cout << "run second coroutine\n";
   [[maybe_unused]] auto temp = t2(t);
   cout << "setting future ready\n";
   fut.runTasks();
-
+  /* f_a.resume()
+   * f_a.await_resume()
+   */
   return;
-  TaskManager tm{};
-  Task::tm = &tm;
-  onFrame();
-  cout << "next\n";
-  tm.nextFrame();
-  cout << "next\n";
-  tm.nextFrame();
+
 }
 
 }

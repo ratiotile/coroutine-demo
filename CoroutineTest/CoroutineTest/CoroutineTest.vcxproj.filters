@@ -39,6 +39,9 @@
     <ClInclude Include="2 MiLi queue.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="cts_tasks.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -56,7 +59,7 @@
     <ClCompile Include="1 MiLi coroutine.h">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="using_future.hpp">
+    <ClCompile Include="cts_tasks.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

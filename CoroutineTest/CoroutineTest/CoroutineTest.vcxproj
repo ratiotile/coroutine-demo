@@ -137,15 +137,16 @@
   <ItemGroup>
     <ClCompile Include="1 MiLi coroutine.h" />
     <ClCompile Include="coroutines_ts.cpp" />
+    <ClCompile Include="cts_tasks.cpp" />
     <ClCompile Include="example resume.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="scenario.cpp" />
-    <ClCompile Include="using_future.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="2 MiLi queue.h" />
     <ClInclude Include="3 MiLi await.hpp" />
     <ClInclude Include="coroutines_ts.h" />
+    <ClInclude Include="cts_tasks.h" />
     <ClInclude Include="MiLi\mili\coroutines.h" />
     <ClInclude Include="MiLi\mili\mili.h" />
     <ClInclude Include="mili_helpers.h" />
