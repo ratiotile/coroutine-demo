@@ -2,42 +2,26 @@
 #include <cassert>
 
 namespace cts {
-TaskManager* Task::tm = nullptr;
+TaskManager* TaskManager::instance = nullptr;
 
-
-Task doWork(Worker & worker) {
-  assert(worker.atMine());
-  do {
-    worker.gather();
-    co_await Task::tm->sleepFrames();
-  } while (worker.isMining());
-  co_return;
-}
-
-Task goToMine(Worker & worker) {
-  assert(!worker.atMine());
-  std::cout << "go to mine";
-  while(!worker.atMine()) {
-    worker.moveMine();
-    co_await doWork(worker);
+struct WorkerTask : Task {  
+  MyCoro run() override {
+    while(true) {
+      cout << "running \n";
+      co_await TaskManager::instance->sleepFrames();
+    }
   }
-  co_return;
-}
 
-Task onFrame() {
-  while(true) {
-    std::cout << "onFrame\n";
-    co_await Task::tm->sleepFrames();
+  void cancel() override {
+    
   }
-}
+};
 
 void cts_task_benchmark() {
-  TaskManager tm{};
-  Task::tm = &tm;
-  onFrame();
-  cout << "next\n";
-  tm.nextFrame();
-  cout << "next\n";
-  tm.nextFrame();
+  TaskManager::instance = new TaskManager{};
+  WorkerTask t;
+  t.run();
+  cout << "next frame\n";
+  TaskManager::instance->nextFrame();
 }
 }
