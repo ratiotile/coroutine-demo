@@ -86,10 +86,31 @@ struct MyFuture {
     cout << "MyFuture[" << this << "]";
     auto current = m_list_head;
     while (current != nullptr) {
-      cout << " -> " << current;
+      cout << " -> " << current->m_awaiter.address();
       current = current->m_next;
     }
     cout << "\n";
+  }
+
+  bool cancel(coroutine_handle<> coro) {
+    auto did_cancel = false;
+    if (m_list_head->m_awaiter == coro) {
+      m_list_head = m_list_head->m_next;
+      did_cancel = true;
+    }
+    // delete and re-link chain
+    auto current = m_list_head;
+    while (current != nullptr) {
+      auto const prev = current;
+      current = current->m_next;
+      if (!current) break;
+      if (current->m_awaiter == coro) {
+        prev->m_next = current->m_next;
+        did_cancel = true;
+      }
+    }
+    m_list_head = current;
+    return did_cancel;
   }
 };
 
@@ -193,7 +214,13 @@ struct MyCoro {
     m_coroutine.resume();
   }
   void printStats() {
-    cout << "MyCoro[" << this << "] -> " << m_coroutine.address() << "\n";
+    cout << "MyCoro[" << this << "] -> " << m_coroutine.address() 
+      << "(" << m_coroutine.promise().m_continuation.address() << ")\n";
+    m_coroutine.promise().printStats();
+  }
+
+  void cancel() {
+    m_coroutine.destroy();
   }
 };
 

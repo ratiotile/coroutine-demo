@@ -21,16 +21,23 @@ struct Task {
   virtual void cancel() = 0;
 };
 
+// need to be able to cancel task and reassign units
+struct TaskUnits {
+  MyCoro m_coro;
+  explicit TaskUnits(MyCoro && coro)
+  : m_coro(std::move(coro)) {}
+};
+
 struct TaskManager {
   static TaskManager* instance;
   static constexpr auto max_frames = 5;
   MyFuture m_frames[max_frames];
   int m_index = 0;
-  // std::vector<Task> m_tasks;
+  std::vector<TaskUnits> m_tasks;
 
-  // void addTask(Task&& task) {
-  //   m_tasks.emplace_back(std::move(task));
-  // }
+  void addTask(MyCoro&& coro) {
+    m_tasks.emplace_back(std::move(coro));
+  }
 
   int getIndex(int n) const {
     return (m_index + n) % max_frames;
@@ -48,6 +55,21 @@ struct TaskManager {
     cout << "awaiting frame index " << i << std::endl;
     auto & frame = m_frames[i];//gsl::at(m_frames, i);//
     return frame;
+  }
+
+  void cancelAll() {
+    for(auto & tu : m_tasks) {
+      cout << "cancelling "; tu.m_coro.printStats();
+      for(auto & f : m_frames) {
+        if(f.m_list_head) {
+          cout << "cancel2 "; f.printStats();
+          f.cancel(tu.m_coro.m_coroutine.promise().m_continuation);
+        }
+      }
+      tu.m_coro.cancel(); // delete coroutine frame
+    }
+    m_tasks.clear();
+    cout << "all tasks cancelled!\n";
   }
 };
 

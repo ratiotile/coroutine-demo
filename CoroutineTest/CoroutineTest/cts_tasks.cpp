@@ -20,8 +20,13 @@ struct WorkerTask : Task {
 void cts_task_benchmark() {
   TaskManager::instance = new TaskManager{};
   WorkerTask t;
-  t.run();
+  TaskManager::instance->addTask(t.run());
   cout << "next frame\n";
+  TaskManager::instance->nextFrame();
+  // test cancelling
+  TaskManager::instance->cancelAll();
+  cout << "next frame\n";
+
   TaskManager::instance->nextFrame();
 }
 }
