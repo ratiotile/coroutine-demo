@@ -1,7 +1,7 @@
 #pragma once
 #include<experimental/coroutine>
 #include<iostream>
-#include <gsl.h>
+#include "gsl-lite.hpp"
 
 namespace cts {
 using std::cout;

@@ -2,13 +2,13 @@
 #include <cassert>
 
 namespace cts {
-TaskManager* TaskManager::instance = nullptr;
 
 struct WorkerTask : Task {  
+  WorkerTask(gsl::not_null<TaskManager*> manager) : Task(manager) {}
   MyCoro run() override {
     while(true) {
       cout << "running \n";
-      co_await TaskManager::instance->sleepFrames();
+      co_await m_manager->sleepFrames();
     }
   }
 
@@ -18,15 +18,14 @@ struct WorkerTask : Task {
 };
 
 void cts_task_benchmark() {
-  TaskManager::instance = new TaskManager{};
-  WorkerTask t;
-  TaskManager::instance->addTask(t.run());
-  cout << "next frame\n";
-  TaskManager::instance->nextFrame();
+  auto tm = TaskManager{};
+  WorkerTask t(&tm);
+  tm.addTask(t.run());
+  tm.nextFrame();
   // test cancelling
-  TaskManager::instance->cancelAll();
-  cout << "next frame\n";
+  tm.cancelAll();
 
-  TaskManager::instance->nextFrame();
+  tm.nextFrame();
+  cout << "shouldn't have run \n";
 }
 }

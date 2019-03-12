@@ -6,7 +6,7 @@
 #include <vector>
 #include "coroutines_ts.h"
 #include "scenario.h"
-#include <gsl.h>
+#include "gsl-lite.hpp"
 
 
 namespace cts {
@@ -15,7 +15,10 @@ using std::experimental::coroutine_handle;
 using std::experimental::suspend_always;
 using std::experimental::suspend_never;
 
+struct TaskManager;
 struct Task {
+  gsl::not_null<TaskManager*> m_manager;
+  explicit Task(gsl::not_null<TaskManager*> manager): m_manager(manager) {}
   virtual ~Task() = default;
   virtual MyCoro run() = 0;
   virtual void cancel() = 0;
@@ -44,6 +47,7 @@ struct TaskManager {
   }
 
   void nextFrame() {
+    cout << "next frame\n";
     ++m_index;
     auto& frame = gsl::at(m_frames, m_index);
     frame.runTasks();
