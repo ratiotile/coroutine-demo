@@ -1,4 +1,4 @@
-# Nim coroutines benchmark
+# Nim coroutines benchmark v2, try to speed up
 import asyncdispatch
 import asyncfutures
 import deques
@@ -6,32 +6,37 @@ import math
 import times
 
 const
-  FRAMES = 10 # future frames to keep
+  FRAMES = 2 # future frames to keep
   DISTANCE_TO_MINE = 10
   WORKER_SPEED = 1
   WORKER_CAPACITY = 1
   FRAMES_TO_MINE = 10
   NUM_TASKS = 1000
-  FRAMES_TO_RUN = 1000
+  FRAMES_TO_RUN = 1000000
 
 type
   World = ref object of RootObj
     total_mined: int
+    workers: array[NUM_TASKS, Worker]
   Worker = ref object of RootObj
     carrying: int
     position: int
     mining_progress: int
-    world: World
+    ticks: int
+    total_mined: int
 
-proc newWorker(world: World): Worker =
+proc newWorker(): Worker =
   var w = Worker(
     carrying: 0, 
     position: 0, 
     mining_progress: 0,
-    world: world)
+    ticks: 0,
+    total_mined: 0,
+  )
   return w
 
 proc gather(this: Worker) =
+  this.ticks += 1
   this.mining_progress += 1
   if(this.mining_progress >= FRAMES_TO_MINE):
     this.carrying = WORKER_CAPACITY
@@ -41,13 +46,15 @@ proc isMining(this: Worker): bool =
   return this.mining_progress > 0
 
 proc dropoff(this: Worker) =
-  this.world.total_mined += this.carrying
+  this.total_mined += this.carrying
   this.carrying = 0
 
 proc moveToMine(this: Worker) =
+  this.ticks += 1
   this.position += WORKER_SPEED
 
 proc moveToHome(this: Worker) =
+  this.ticks += 1
   this.position -= WORKER_SPEED
 
 proc isAtMine(this: Worker): bool =
@@ -88,7 +95,7 @@ proc frame*(this: TaskManager, frames = 1): Future[void] =
 # removes the current frame, adding a replacement
 proc popFrame*(this: TaskManager) =
   this.frame_futures.popFirst()
-  this.frame_futures.addLast(@[])
+  this.frame_futures.addLast(newSeq[Future[void]]())
   this.current_frame += 1
 
 # execute one future
@@ -133,11 +140,11 @@ proc nextTaskId(): int =
   return task_id
 
 # creates new task internally, don't see a reason why not
-proc addTask*(this: TaskManager) =
+proc addTask*(this: TaskManager, worker: Worker) =
   var task = Task(
     name: "Task " & $nextTaskId(),
     tm: this,
-    worker: this.world.newWorker()
+    worker: worker,
   )
   var cb =  proc(future: Future[void]) {.closure, gcsafe.} =
     discard task.run()
@@ -148,24 +155,35 @@ proc addTask*(this: TaskManager) =
 let tm = newTaskManager()
 
 for i in 1..NUM_TASKS:
-  tm.addTask()
+  let worker = newWorker()
+  tm.world.workers[i-1] = worker
+  tm.addTask(worker)
 
 let start_t = getTime()
 for i in 1..FRAMES_TO_RUN:
-  tm.doFrame()
+  #tm.doFrame()
+  tm.step()
 let end_t = getTime()
 let diff = end_t - start_t
 
+tm.world.total_mined = 0
+for i in 0..NUM_TASKS-1:
+  tm.world.total_mined += tm.world.workers[i].total_mined
+
 echo "Mined a total of " & $tm.world.total_mined & " took " & $diff
+echo "ticks: " & $tm.world.workers[0].ticks
 # @1000/1000, Mined a total of 33000 took 164 milliseconds, 9 microseconds, and 400 nanoseconds
 # @1000/1000000 stepping, Mined a total of 33000 took 7 seconds, 507 milliseconds, 429 microseconds, and 400 nanoseconds
 # about 7.5 microseconds per step
+# v0.20
+# @1000/1000000 stepping, Mined a total of 33000 took 6 seconds, 127 milliseconds, 268 microseconds, and 600 nanoseconds
+# about 6127 ns per step
 
 # in contrast, C++ duff's device coroutines took 0.293494 seconds (unoptimized), or 0.3 microseonds per step.
-# C++ MiLi coroutines are 30x faster! (unoptimized)
+# C++ MiLi coroutines are 30x faster (unoptimized)
 # optimized @1000/1000000 stepping, 15372180 ns = 15ns per step, or 500x faster?
 #[ C++
-Release completes 33000 trips in 27776843 ns
+Release completes 33000 trips in 20ns per step (300x faster)
 
 ]#
 
