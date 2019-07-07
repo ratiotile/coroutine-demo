@@ -1,0 +1,3 @@
+[submodule "nim-coroutines/circular-queue"]
+	path = nim-coroutines/circular-queue
+	url = https://github.com/ratiotile/nim-circular-queue
