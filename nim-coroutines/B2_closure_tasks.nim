@@ -12,11 +12,11 @@ const
   WORKER_SPEED = 1
   WORKER_CAPACITY = 1
   FRAMES_TO_MINE = 10
-  NUM_TASKS = 1000
-  FRAMES_TO_RUN = 1000000
+  NUM_TASKS = 1
+  FRAMES_TO_RUN = 100
 
 type
-  Worker = ref object of RootObj
+  Worker = ref object
     total_mined: int
     ticks: int
     carrying: int
@@ -85,38 +85,21 @@ proc newTaskContext(w: Worker): TaskContext =
     caller: nil, 
   )
 
-iterator a1(): TaskStatus {.closure.} =
-  echo "a1: A"
-  yield newTaskStatus(next_frame)
-  echo "a1: B"
-  yield newTaskStatus(next_frame)
-  echo "a1: C"
-  yield newTaskStatus(next_frame)
-  echo "a1: D"
-  return newTaskStatus(done)
-
-iterator a2(): TaskStatus {.closure.} =
-  echo "a2: A"
-  yield newTaskStatus(next_frame)
-  echo "a2: B"
-  yield newTaskStatus(next_frame)
-  echo "a2: C"
-  return newTaskStatus(done)
-
 proc goToMine(this: TaskContext): Task  =
-  #echo "in goToMine"
+  echo "in goToMine"
   let it = iterator(): TaskStatus {.closure.} =
     while not this.worker.isAtMine():
-      #echo "moving"
+      echo "moving"
       this.worker.moveToMine()
       yield newTaskStatus(next_frame)
-    #echo "at mine"
+    echo "at mine"
     return newTaskStatus(done, this.caller)
   result = it
 
 proc doGather(this: TaskContext): Task =
   result = iterator(): TaskStatus {.closure.} =
     while true:
+      echo "mining"
       this.worker.gather()
       yield newTaskStatus(next_frame)
       if not this.worker.isMining():
@@ -126,25 +109,27 @@ proc doGather(this: TaskContext): Task =
 proc doDropoff(this: TaskContext): Task =
   result = iterator(): TaskStatus {.closure.} =
     while not this.worker.isAtHome():
+      echo "move home"
       this.worker.moveToHome()
       yield newTaskStatus(next_frame)
+    echo "dropoff"
     this.worker.dropoff()
     return newTaskStatus(done, this.caller)
 
 proc runWorker(this: TaskContext): Task =
   let it = iterator(): TaskStatus {.closure.} =
     while true:
-      #echo "wait for goToMine"
+      echo "wait for goToMine"
       yield newTaskStatus(wait_for, goToMine(this))
-      #echo "wait for doGather"
+      echo "wait for doGather"
       yield newTaskStatus(wait_for, doGather(this))
-      #echo "wait for doDropoff"
+      echo "wait for doDropoff"
       yield newTaskStatus(wait_for, doDropoff(this))
   this.caller = it
   return it
 
 type
-  TaskManager* = ref object of RootObj
+  TaskManager* = ref object
     frames*: Deque[seq[Task]]
     total_mined: int
     workers: seq[Worker]
@@ -183,10 +168,10 @@ proc runFrame(this: var TaskManager) =
   this.popFrame()
 
 proc step(this: var TaskManager) =
-  if this.frames.peekFirst().len() == 0:
-    this.popFrame()
-  else:
+  if this.frames.peekFirst().len() > 0:
     this.runTask()
+  else:
+    this.popFrame()
 
 var tm = newTaskManager()
 
@@ -197,6 +182,7 @@ for i in 1..NUM_TASKS:
 
 let start_t = getTime()
 for i in 1..FRAMES_TO_RUN:
+  echo "frame " & $i
   #tm.runFrame()
   tm.step()
 let end_t = getTime()
@@ -204,8 +190,11 @@ let diff = end_t - start_t
 for w in tm.workers:
   tm.total_mined += w.total_mined
 echo "Mined a total of " & $tm.total_mined & " took " & $diff
+echo "ticks: " & $tm.workers[0].ticks
 
 #[ Mined a total of 27000 took 18 seconds, 456 milliseconds, 343 microseconds, and 600 nanoseconds
 in release mode, not as good as await; the total is off, which means some steps are doing nothing.
 Also the GC is probably killing the speed here.
+
+Removing the RootObj: 18307824600 ns, slightly better
 ]#

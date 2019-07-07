@@ -40,3 +40,4 @@ Release
 *.ilk
 *.pdb
 build
+nimcache
