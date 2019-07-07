@@ -4,6 +4,8 @@ import asyncfutures
 import deques
 import math
 import times
+import circular_queue
+import nimprof
 
 const
   FRAMES = 2 # future frames to keep
@@ -65,7 +67,7 @@ proc isAtHome(this: Worker): bool =
 
 type 
   TaskManager* = ref object of RootObj
-    frame_futures: Deque[seq[Future[void]]]
+    frame_futures: CircularQueue[FRAMES, FutureQueue]
     current_frame*: int
     world: World
   # Fix the immediate execution of tasks, and associate data with an object
@@ -74,19 +76,24 @@ type
     tm: TaskManager
     worker: Worker
 
+  FutureT = Future[void]
+  FutureQueue = seq[FutureT]
+  #FutureQueue = CircularQueue[NUM_TASKS, FutureT]
+
 # create a new TaskManager with futures preallocated
 proc newTaskManager*(): TaskManager =
   var tm = TaskManager(
-    frame_futures: initDeque[seq[Future[void]]](nextPowerOfTwo(FRAMES)),
+    frame_futures: newCircularQueue[FRAMES, FutureQueue](),
     current_frame: 1,
     world: World(total_mined: 0)
   )
   for i in 1..FRAMES:
-    tm.frame_futures.addLast(newSeqOfCap[Future[void]](NUM_TASKS))
+    tm.frame_futures.addLast(newSeq[FutureT]())
+    #tm.frame_futures.addLast(newCircularQueue[NUM_TASKS, FutureT]())
   return tm
 
 # suspend async proc for a number of frames before running again
-proc frame*(this: TaskManager, frames = 1): Future[void] =
+proc frame*(this: TaskManager, frames = 1): FutureT =
   var f = newFuture[void]("frame")
   # index 0 is current frame
   this.frame_futures[frames].add(f)
@@ -94,8 +101,11 @@ proc frame*(this: TaskManager, frames = 1): Future[void] =
 
 # removes the current frame, adding a replacement
 proc popFrame*(this: TaskManager) =
-  this.frame_futures.popFirst()
-  this.frame_futures.addLast(newSeq[Future[void]]())
+  #this.frame_futures.popFirst()
+  this.frame_futures.shift()
+  #this.frame_futures.addLast(newCircularQueue[NUM_TASKS, FutureT]())
+  #this.frame_futures[FRAMES - 1].clear()
+  this.frame_futures[FRAMES - 1].setLen(0)
   this.current_frame += 1
 
 # execute one future
@@ -146,7 +156,7 @@ proc addTask*(this: TaskManager, worker: Worker) =
     tm: this,
     worker: worker,
   )
-  var cb =  proc(future: Future[void]) {.closure, gcsafe.} =
+  var cb =  proc(future: FutureT) {.closure, gcsafe.} =
     discard task.run()
   var f = newFuture[void]("starter")
   f.callback = cb
@@ -178,6 +188,12 @@ echo "ticks: " & $tm.world.workers[0].ticks
 # v0.20
 # @1000/1000000 stepping, Mined a total of 33000 took 6 seconds, 127 milliseconds, 268 microseconds, and 600 nanoseconds
 # about 6127 ns per step
+# Circular Queues improved it to 7110903000ns @1000/1000 frames
+# and 7084399600 @1000/1000000 steps, seems to be worse
+# switching back to seq for futures @1000/1000000 step: 6122277400, about the same
+# with the asserts compiled out: 6095274000 ns, slightly better
+# let's try switching the inner seqs back to circular arrays.
+# @1000/1000000 step: 7010390200 nc, which isn't that much better than before
 
 # in contrast, C++ duff's device coroutines took 0.293494 seconds (unoptimized), or 0.3 microseonds per step.
 # C++ MiLi coroutines are 30x faster (unoptimized)

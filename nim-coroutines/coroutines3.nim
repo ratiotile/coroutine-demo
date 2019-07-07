@@ -4,7 +4,7 @@ import asyncfutures
 import deques
 import math
 import times
-import circular_queue
+import circular-queue/circular_queue
 
 const
   FRAMES = 2 # future frames to keep
@@ -16,9 +16,6 @@ const
   FRAMES_TO_RUN = 1000000
 
 type
-  World = ref object
-    total_mined: int
-    workers: array[NUM_TASKS, Worker]
   Worker = object
     carrying: int
     position: int
@@ -67,12 +64,11 @@ type
   TaskManager* = object
     frame_futures: CircularQueue[FRAMES, FutureQueue]
     current_frame*: int
-    world: World
-    tasks: seq[Task]
+    tasks: array[NUM_TASKS, Task]
   # Fix the immediate execution of tasks, and associate data with an object
   Task = object
     # name: string
-    worker: ptr Worker
+    worker: Worker
 
   FutureT = Future[void]
   FutureQueue = seq[FutureT]
@@ -83,7 +79,6 @@ proc newTaskManager*(): TaskManager =
   var tm = TaskManager(
     frame_futures: newCircularQueue[FRAMES, FutureQueue](),
     current_frame: 1,
-    world: World(total_mined: 0)
   )
   for i in 1..FRAMES:
     tm.frame_futures.addLast(newSeq[FutureT]())
@@ -108,10 +103,14 @@ proc popFrame*(this: var TaskManager) =
 
 # execute one future
 proc step(this: var TaskManager) = 
-  if this.frame_futures.peekFirst().len() == 0:
-    this.popFrame()
-  else:
+  if this.frame_futures.peekFirst().len() > 0:
     this.frame_futures[0].pop().complete()
+  else:
+    this.popFrame()
+  #if this.frame_futures.peekFirst().len() == 0:
+  #  this.popFrame()
+  #else:
+  #  this.frame_futures[0].pop().complete()
 
 proc doFrame(this: var TaskManager) =
   while this.frame_futures.peekFirst().len() > 0:
@@ -125,37 +124,38 @@ proc nextTaskId(): int =
   task_id += 1
   return task_id
 
-proc goToMine(this: Task) {.async.} =
-  while not this.worker[].isAtMine():
-    this.worker[].moveToMine()
+proc goToMine(this: ptr Task) {.async.} =
+  while not this.worker.isAtMine():
+    this.worker.moveToMine()
     await tm.frame()
 
-proc doMining(this: Task) {.async.} =
+proc doMining(this: ptr Task) {.async.} =
   while true:
-    this.worker[].gather()
+    this.worker.gather()
     await tm.frame()
-    if not this.worker[].isMining():
+    if not this.worker.isMining():
       break
 
-proc dropoff(this: Task) {.async.} =
-  while not this.worker[].isAtHome():
-    this.worker[].moveToHome()
+proc dropoff(this: ptr Task) {.async.} =
+  while not this.worker.isAtHome():
+    this.worker.moveToHome()
     await tm.frame()
-  this.worker[].dropoff()
+  this.worker.dropoff()
 
-proc run(this: Task) {.async, gcsafe.}=
+proc run(this: ptr Task) {.async, gcsafe.}=
   while true:
     await this.goToMine()
     await this.doMining()
     await this.dropoff()
 
 # creates new task internally, don't see a reason why not
-proc addTask*(this: var TaskManager, worker: ptr Worker) =
-  var task = Task(
+proc addTask*(this: var TaskManager, i: int) =
+  this.tasks[i] = Task(
     # name: "Task " & $nextTaskId(),
     # tm: unsafeAddr this,
-    worker: worker,
+    worker: newWorker(),
   )
+  let task = this.tasks[i].addr()
   var cb =  proc(future: FutureT) {.closure, gcsafe.} =
     discard task.run()
   var f = newFuture[void]("starter")
@@ -166,10 +166,8 @@ proc addTask*(this: var TaskManager, worker: ptr Worker) =
 
 tm = newTaskManager()
 
-for i in 1..NUM_TASKS:
-  let worker = newWorker()
-  tm.world.workers[i-1] = worker
-  tm.addTask(unsafeAddr worker)
+for i in 0..NUM_TASKS-1:
+  tm.addTask(i)
 
 let start_t = getTime()
 for i in 1..FRAMES_TO_RUN:
@@ -178,12 +176,12 @@ for i in 1..FRAMES_TO_RUN:
 let end_t = getTime()
 let diff = end_t - start_t
 
-tm.world.total_mined = 0
+var total_mined = 0
 for i in 0..NUM_TASKS-1:
-  tm.world.total_mined += tm.world.workers[i].total_mined
+  total_mined += tm.tasks[i].worker.total_mined
 
-echo "Mined a total of " & $tm.world.total_mined & " took " & $diff
-echo "ticks: " & $tm.world.workers[0].ticks
+echo "Mined a total of " & $total_mined & " took " & $diff
+echo "ticks: " & $tm.tasks[0].worker.ticks
 # @1000/1000, Mined a total of 33000 took 164 milliseconds, 9 microseconds, and 400 nanoseconds
 # @1000/1000000 stepping, Mined a total of 33000 took 7 seconds, 507 milliseconds, 429 microseconds, and 400 nanoseconds
 # about 7.5 microseconds per step
@@ -201,6 +199,11 @@ echo "ticks: " & $tm.world.workers[0].ticks
 # Global TaskManager: 5956756400 ns
 # non-ref world made things slightly worse
 # Task non-ref, removed RootObj: 5930753100
+# Tasks in array: 6129778400 ns slightly worse
+# Worker not pointer in Task: 6348806200 ns slightly worse
+# removed World: 5993261000 ns better!
+# switched step condition to most common first:
+#   5916251300 ns better!
 
 # in contrast, C++ duff's device coroutines took 0.293494 seconds (unoptimized), or 0.3 microseonds per step.
 # C++ MiLi coroutines are 30x faster (unoptimized)
