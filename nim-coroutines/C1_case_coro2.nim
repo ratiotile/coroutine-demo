@@ -1,5 +1,6 @@
 #[ Simulate the C++ switch-based coroutine with case statements as a baseline,
-as a basic state machine. 
+as a basic state machine. Try to expand it to use frame containers for tasks,
+and to execute per frame instead of per step to see if it will hurt performance.
 
 Trying to emit switch statements for Duff's device won't work because Nim
 messes up the braces.
@@ -200,9 +201,7 @@ echo "Mined a total of " & $total_mined & " took " & $diff
 
 #[ parameters: 1000/1000000, runs only 1 worker per frame(tick)
   Amazing, now takes 44200400 ns for 1000000 ticks, 44ns per tick
-  C++ took           15372180 ns, or 15ns per tick
-  Performance can be further improved:
-  -gc:none (no garbage collector): 37002100 ns, a 16% improvement
-  -x:off (Checks off): 20001100ns, or 20ns per tick, matching C++!
-  GC off, all checks off: 14000800 ns, or 14ns per tick!
+  C++ took           19876503 ns, or 20ns per tick
+
+
 ]#
