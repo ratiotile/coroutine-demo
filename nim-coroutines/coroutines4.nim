@@ -165,6 +165,6 @@ echo "ticks: " & $tm.tasks[0].worker.ticks
   Everything as refs (+workers):
     94005400 ns : surprisingly good
     106006100ns : actually GC-safe, can't have TaskManager as ref!
-    126016000ns : checks on
+    126016000ns : checks on, 600% slower than C++
 ]#
 

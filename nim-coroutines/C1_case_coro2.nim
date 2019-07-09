@@ -11,7 +11,6 @@ import times
 import circular-queue/circular_queue
 
 const
-  FRAMES = 2 # future frames to keep
   DISTANCE_TO_MINE = 10
   WORKER_SPEED = 1
   WORKER_CAPACITY = 1
@@ -202,6 +201,5 @@ echo "Mined a total of " & $total_mined & " took " & $diff
 #[ parameters: 1000/1000000, runs only 1 worker per frame(tick)
   Amazing, now takes 44200400 ns for 1000000 ticks, 44ns per tick
   C++ took           19876503 ns, or 20ns per tick
-
 
 ]#

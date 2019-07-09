@@ -62,120 +62,116 @@ proc isAtHome(this: Worker): bool =
   return this.position <= 0
 
 type
-  TaskStatusCode = enum
-    next_frame, done, wait_for
-  Task = iterator (): TaskStatus
-  TaskStatus = object
-    code*: TaskStatusCode
-    next*: Task
-    caller: Task
-  TaskContext = ref object
+  TaskCoro = iterator (): Task
+  Task = ref object
+    run: TaskCoro
     caller: Task
     worker: Worker
 
-proc newTaskStatus(code: TaskStatusCode, next: Task=nil): TaskStatus =
-  TaskStatus(
-    code: code,
-    next: next,
-  )
+let end_coro = Task()
+let next_frame = Task()
 
-proc newTaskContext(w: Worker): TaskContext =
-  result = TaskContext(
-    worker: w,
-    caller: nil, 
+proc newTask(caller: Task = nil): Task =
+  result = Task(
+    run: nil,
+    caller: caller, 
   )
+  if caller != nil:
+    result.worker = caller.worker
 
-proc goToMine(this: TaskContext): Task  =
+proc goToMine(this: Task): Task  =
   #echo "in goToMine"
-  let it = iterator(): TaskStatus {.closure.} =
+  let task = newTask(this)
+  let it = iterator(): Task {.closure.} =
     while not this.worker.isAtMine():
       #echo "moving"
       this.worker.moveToMine()
-      yield newTaskStatus(next_frame)
+      yield next_frame
     #echo "at mine"
-    return newTaskStatus(done, this.caller)
-  result = it
+    return end_coro
+  task.run = it
+  return task
 
-proc doGather(this: TaskContext): Task =
-  result = iterator(): TaskStatus {.closure.} =
+proc doGather(this: Task): Task =
+  result = newTask(this)
+  result.run = iterator(): Task {.closure.} =
     while true:
       #echo "mining"
       this.worker.gather()
-      yield newTaskStatus(next_frame)
+      yield next_frame
       if not this.worker.isMining():
         break
-    return newTaskStatus(done, this.caller)
+    return end_coro
 
-proc doDropoff(this: TaskContext): Task =
-  result = iterator(): TaskStatus {.closure.} =
+proc doDropoff(this: Task): Task =
+  result = newTask(this)
+  result.run = iterator(): Task {.closure.} =
     while not this.worker.isAtHome():
       #echo "move home"
       this.worker.moveToHome()
-      yield newTaskStatus(next_frame)
+      yield next_frame
     #echo "dropoff"
     this.worker.dropoff()
-    return newTaskStatus(done, this.caller)
+    return end_coro
 
-proc runWorker(this: TaskContext): Task =
-  let it = iterator(): TaskStatus {.closure.} =
+proc runWorker(w: Worker): Task =
+  let t = newTask()
+  t.worker = w
+  t.run = iterator(): Task {.closure.} =
     while true:
       #echo "wait for goToMine"
-      yield newTaskStatus(wait_for, goToMine(this))
+      yield goToMine(t)
       #echo "wait for doGather"
-      yield newTaskStatus(wait_for, doGather(this))
+      yield doGather(t)
       #echo "wait for doDropoff"
-      yield newTaskStatus(wait_for, doDropoff(this))
-  this.caller = it
-  return it
+      yield doDropoff(t)
+  return t
 
 type
   TaskManager* = ref object
     queue*: CircularQueue[NUM_TASKS, Task]
-    total_mined: int
     workers: seq[Worker]
 
 proc newTaskManager(): TaskManager = 
   var tm = TaskManager(
     queue: newCircularQueue[NUM_TASKS, Task](),
-    total_mined: 0
   )
   return tm
 
-proc addTask(this: var TaskManager, t: TaskContext) =
-  this.workers.add(t.worker)
-  this.queue.add(t.runWorker())
+proc addTask(this: var TaskManager) =
+  let w = newWorker()
+  let task = runWorker(w)
+  this.workers.add(w)
+  this.queue.add(task)
 
 proc step(this: var TaskManager) =
   while not this.queue.isEmpty():
-    let x: Task = this.queue.pop()
-    let status: TaskStatus = x()
-    if status.code == next_frame:
+    let x = this.queue.pop()
+    let status = x.run()
+    if status == next_frame: # await next frame
       this.queue.add(x)
       break
-    elif status.code == wait_for:
-      this.queue.add(status.next)
+    elif status == end_coro and x.caller != nil: # end of task
+      this.queue.add(x.caller)
       continue
-    elif status.code == done:
-      if status.next != nil:
-        this.queue.add(status.next)
+    elif status.caller != nil: # new task
+      this.queue.add(status)
       continue
  
-
 var tm = newTaskManager()
 
 for i in 1..NUM_TASKS:
-  var w = newWorker()
-  var tc = newTaskContext(w)
-  tm.addTask(tc)
+  tm.addTask()
 
 let start_t = getTime()
 for i in 1..FRAMES_TO_RUN:
   tm.step()
 let end_t = getTime()
 let diff = end_t - start_t
+var total_mined = 0
 for w in tm.workers:
-  tm.total_mined += w.total_mined
-echo "Mined a total of " & $tm.total_mined & " took " & $diff
+  total_mined += w.total_mined
+echo "Mined a total of " & $total_mined & " took " & $diff
 echo "ticks: " & $tm.workers[0].ticks
 
 #[ Mined a total of 27000 took 18 seconds, 456 milliseconds, 343 microseconds, and 600 nanoseconds
@@ -184,5 +180,8 @@ Also the GC is probably killing the speed here.
 
 Removing the RootObj: 18307824600 ns, slightly better
 Switch to single array queue:
-205526400 ns : 206ns per cycle, 2x slower than await
+  205526400 ns : 206ns per cycle, 2x slower than await
+Simplified indirections:
+  045505800 ns : 46ns per cycle, great! nearly as good as case statments
+  027503500 ns : 28ns per cycle, with -x:off; a 40% slower than C++
 ]#
